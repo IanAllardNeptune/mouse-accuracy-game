@@ -1,51 +1,112 @@
 <!DOCTYPE html>
+
 <html>
 <head>
   <title>Mouse Accuracy Game</title>
   <style>
-    #clicker { position:absolute; width:40px; height:40px; }
+    #clicker { 
+      position:absolute; 
+      width:40px; 
+      height:40px;
+      border-radius: 50%;
+      transform: scale(0);
+    }
     #hud { margin-top:8px; }
+    #scoreboard {
+      display:none;
+      margin-top:20px;
+      border:1px solid #000;
+      padding:10px;
+      width:200px;
+      background:#f0f0f0;
+    }
   </style>
 </head>
 <body>
 
-<button id="button">Start Game</button>
-<button id="stop">Stop Game</button>
-<button id="clicker"></button>
+<button id="button">Start Game</button> <button id="stop">Stop Game</button> <button id="clicker"></button>
 
+<span id="timer">Time: 30</span> <span id="score">Score: 0</span>
 
-<span id="timer">Time: 30</span>
-<span id="score">Score: 0</span>
-
+<div id="scoreboard">
+  <p id="totalTargetsDisplay"></p>
+  <p id="clickedTargetsDisplay"></p>
+  <p id="finalScoreDisplay"></p>
+</div>
 
 <script>
 let run = 0, x = 0, y = 0, t = 30, pts = 0, cI = 0, mI = 0, tI = 0;
+let totalTargets = 0;
+let growTimeout = null, shrinkTimeout = null;
 
 const startBtn = document.getElementById("button");
 const nope = document.getElementById("stop");
 const dot = document.getElementById("clicker");
 const tim = document.getElementById("timer");
 const scr = document.getElementById("score");
+const scoreboard = document.getElementById("scoreboard");
+const totalTargetsDisplay = document.getElementById("totalTargetsDisplay");
+const clickedTargetsDisplay = document.getElementById("clickedTargetsDisplay");
+const finalScoreDisplay = document.getElementById("finalScoreDisplay");
+
+const GROW_TIME = 300; 
+const FULL_SIZE_DURATION = 400; 
+const SHRINK_TIME = 300; 
 
 startBtn.onclick = function () {
+  pts = 0;
+  totalTargets = 0;
+  scr.textContent = "Score: 0";
+  scoreboard.style.display = "none";
   boom();
   clock();
 };
 
 nope.onclick = function () {
-  clearInterval(cI);
-  clearInterval(mI);
-  clearInterval(tI);
-  run = 0;
+  endGame();
 };
 
 dot.onclick = function () {
   if (run == false) return;
   pts = pts + 1;
   scr.textContent = "Score: " + pts;
+  
+  clearInterval(mI);
+  clearTimeout(growTimeout);
+  clearTimeout(shrinkTimeout);
+  
+  x = 50 + Math.random() * 500;
+  y = 50 + Math.random() * 500;
+  dot.style.left = x + "px";
+  dot.style.top = y + "px";
+  
+  animateTarget();
+  
+  mI = setInterval(function () {
+    x = 50 + Math.random() * 500;
+    y = 50 + Math.random() * 500;
+    dot.style.left = x + "px";
+    dot.style.top = y + "px";
+    animateTarget();
+  }, 1000);
 };
 
 function r(n) { return Math.floor(Math.random() * n); }
+
+function animateTarget() {
+  totalTargets++;
+  dot.style.transform = 'scale(0)';
+  dot.style.transition = `transform ${GROW_TIME}ms ease-out`;
+  
+  setTimeout(() => {
+    dot.style.transform = 'scale(1)';
+  }, 10);
+  
+  shrinkTimeout = setTimeout(() => {
+    dot.style.transition = `transform ${SHRINK_TIME}ms ease-in`;
+    dot.style.transform = 'scale(0)';
+  }, GROW_TIME + FULL_SIZE_DURATION);
+}
 
 function boom() {
   run = 1;
@@ -60,11 +121,14 @@ function boom() {
   }, 500);
 
   clearInterval(mI);
+  animateTarget();
+  
   mI = setInterval(function () {
     x = 50 + Math.random() * 500;
     y = 50 + Math.random() * 500;
     dot.style.left = x + "px";
     dot.style.top = y + "px";
+    animateTarget();
   }, 1000);
 }
 
@@ -75,12 +139,29 @@ function clock() {
 
   tI = setInterval(function () {
     t = t - 1;
-    if (t < 0  ) {
-      clearInterval(tI);
-      clearInterval(cI);
-      clearInterval(mI);
-      run = 0;
-    } }, 1000);
+    tim.textContent = "Time: " + t;
+    if (t < 0) {
+      endGame();
+    }
+  }, 1000);
+}
+
+function endGame() {
+  clearInterval(tI);
+  clearInterval(cI);
+  clearInterval(mI);
+  clearTimeout(growTimeout);
+  clearTimeout(shrinkTimeout);
+  run = 0;
+
+  dot.style.transform = 'scale(0)';
+
+
+  totalTargetsDisplay.textContent = "Total targets appeared: " + totalTargets;
+  clickedTargetsDisplay.textContent = "Targets clicked: " + pts;
+  let score = totalTargets > 0 ? Math.round((pts / totalTargets) * 100) : 0;
+  finalScoreDisplay.textContent = "Score: " + score;
+  scoreboard.style.display = "block";
 }
 </script>
 
